@@ -1,0 +1,47 @@
+---
+- hosts: all
+  tasks:
+    - name: Add ppa:ondrej/php
+      apt_repository: repo=ppa:ondrej/php state=present
+      retries: 5
+
+    - apt: state=installed name='{{ item }}' update_cache=yes
+      with_items: [wget, unzip, re2c, libgearman-dev, php7.0-dev, make]
+
+    - git:
+        dest=/tmp/pecl-gearman
+        repo=https://github.com/wcgallego/pecl-gearman.git
+        accept_hostkey=yes
+        version=master
+    - command: phpize chdir=/tmp/pecl-gearman
+    - command: ./configure chdir=/tmp/pecl-gearman
+    - command: make chdir=/tmp/pecl-gearman
+    - command: make install chdir=/tmp/pecl-gearman
+    - lineinfile:
+        dest=/etc/php/7.0/mods-available/gearman.ini
+        line='extension="gearman.so"'
+        create=yes
+
+    - name: Install PHP-FPM dependencies
+      apt:
+        pkg={{ item }}
+        state=latest
+        update_cache=yes
+        cache_valid_time=1800
+        install_recommends=no
+      with_items:
+      - php
+      - php-apc
+      - php-apcu
+      - php-cli
+      - php-common
+      - php-curl
+      - php-dev
+      - php-fpm
+      - php-gd
+      - php-geoip
+      - php-json
+      - php-mcrypt
+      - php-mysql
+      - php-mongo
+      - php-intl
